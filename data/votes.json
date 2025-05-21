@@ -1,0 +1,26 @@
+[
+  {
+    "id": "vote1",
+    "userId": "user1",
+    "optionId": "option1",
+    "createdAt": "2023-05-21T10:00:00.000Z"
+  },
+  {
+    "id": "vote2",
+    "userId": "user2",
+    "optionId": "option2",
+    "createdAt": "2023-05-21T10:05:00.000Z"
+  },
+  {
+    "id": "vote3",
+    "userId": "user3",
+    "optionId": "option1",
+    "createdAt": "2023-05-21T10:10:00.000Z"
+  },
+  {
+    "id": "vote4",
+    "userId": "user4",
+    "optionId": "option1",
+    "createdAt": "2023-05-21T10:15:00.000Z"
+  }
+]

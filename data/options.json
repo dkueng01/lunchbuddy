@@ -1,0 +1,23 @@
+[
+  {
+    "id": "option1",
+    "name": "Pizza Palace",
+    "description": "Great pizza with lots of topping options",
+    "addedBy": "user1",
+    "createdAt": "2023-05-21T09:30:00.000Z"
+  },
+  {
+    "id": "option2",
+    "name": "Taco Tuesday",
+    "description": "Authentic Mexican tacos and burritos",
+    "addedBy": "user2",
+    "createdAt": "2023-05-21T09:35:00.000Z"
+  },
+  {
+    "id": "option3",
+    "name": "Salad Bar",
+    "description": "Fresh salads with many toppings",
+    "addedBy": "user3",
+    "createdAt": "2023-05-21T09:40:00.000Z"
+  }
+]
