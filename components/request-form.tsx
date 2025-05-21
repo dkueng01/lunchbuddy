@@ -12,7 +12,7 @@ import type { Status, User } from "@/lib/types"
 import { ShoppingBag, Check } from "lucide-react"
 
 interface RequestFormProps {
-  volunteer: User | null
+  volunteer: User | null | undefined
   currentUser: User
   status: Status
   onStatusUpdate: (newState: string) => void

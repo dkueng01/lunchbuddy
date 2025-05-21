@@ -94,7 +94,7 @@ export default function LunchBoard() {
   }
 
   // Determine if voting phase is complete (at least 3 votes total)
-  const isVotingComplete = votes.length >= 3
+  const isVotingComplete = votes.length >= 1
 
   // Status badge component
   const StatusBadge = () => {
