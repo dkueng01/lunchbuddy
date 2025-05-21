@@ -39,3 +39,9 @@ export interface Status {
   state: "planning" | "ordering" | "picked up" | "delivered"
   volunteerId: string | null
 }
+
+export interface PlanningSession {
+  id: string
+  createdAt: string
+  lastActivity: string
+}

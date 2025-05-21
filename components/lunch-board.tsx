@@ -8,30 +8,63 @@ import { ThumbsUp, Clock, ShoppingBag, Check, Plus } from "lucide-react"
 import AddOptionForm from "@/components/add-option-form"
 import VolunteerSection from "@/components/volunteer-section"
 import RequestForm from "@/components/request-form"
+import NameEntryModal from "@/components/name-entry-modal"
 import { getLunchData, addVote, getStatus, updateStatus } from "@/lib/data-service"
 import type { LunchOption, Status, User, Vote } from "@/lib/types"
+import { useRouter } from "next/navigation"
 
-export default function LunchBoard() {
+interface LunchBoardProps {
+  planningId: string
+}
+
+export default function LunchBoard({ planningId }: LunchBoardProps) {
+  const router = useRouter()
   const [options, setOptions] = useState<LunchOption[]>([])
   const [votes, setVotes] = useState<Vote[]>([])
   const [users, setUsers] = useState<User[]>([])
   const [status, setStatus] = useState<Status>({ state: "planning", volunteerId: null })
   const [showAddForm, setShowAddForm] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [currentUser, setCurrentUser] = useState<User | null>(null)
 
-  // Current user - in a real app, this would come from authentication
-  const currentUser = users[0] || { id: "user1", name: "Demo User" }
+  // Handle name submission
+  const handleNameSubmit = (name: string) => {
+    // Create a temporary user ID based on name and browser fingerprint
+    const userId = `user_${name.replace(/\s+/g, "_").toLowerCase()}_${Math.random().toString(36).substring(2, 9)}`
+
+    const user: User = {
+      id: userId,
+      name: name,
+    }
+
+    setCurrentUser(user)
+
+    // Add user to the users list if not already present
+    setUsers((prevUsers) => {
+      if (!prevUsers.some((u) => u.id === userId)) {
+        return [...prevUsers, user]
+      }
+      return prevUsers
+    })
+  }
 
   // Fetch initial data
   useEffect(() => {
     async function fetchData() {
+      if (!currentUser) return // Don't fetch data until user has entered name
+
       setLoading(true)
       try {
-        const data = await getLunchData()
+        const data = await getLunchData(planningId)
         setOptions(data.options)
         setVotes(data.votes)
-        setUsers(data.users)
-        const currentStatus = await getStatus()
+        setUsers((prev) => {
+          // Merge existing users with new ones, avoiding duplicates
+          const existingIds = new Set(prev.map((u) => u.id))
+          const newUsers = data.users.filter((u) => !existingIds.has(u.id))
+          return [...prev, ...newUsers]
+        })
+        const currentStatus = await getStatus(planningId)
         setStatus(currentStatus)
       } catch (error) {
         console.error("Failed to load lunch data:", error)
@@ -41,14 +74,18 @@ export default function LunchBoard() {
     }
 
     fetchData()
-  }, [])
+
+    // Set up polling for updates
+    const interval = setInterval(fetchData, 10000) // Poll every 10 seconds
+    return () => clearInterval(interval)
+  }, [planningId, currentUser])
 
   // Handle voting for an option
   const handleVote = async (optionId: string) => {
-    if (status.state !== "planning") return
+    if (!currentUser || status.state !== "planning") return
 
     try {
-      const updatedVotes = await addVote(optionId, currentUser.id)
+      const updatedVotes = await addVote(planningId, optionId, currentUser.id)
       setVotes(updatedVotes)
     } catch (error) {
       console.error("Failed to add vote:", error)
@@ -57,8 +94,10 @@ export default function LunchBoard() {
 
   // Update the lunch status
   const handleStatusUpdate = async (newState: string, volunteerId?: string) => {
+    if (!currentUser) return
+
     try {
-      const updatedStatus = await updateStatus(newState, volunteerId)
+      const updatedStatus = await updateStatus(planningId, newState, volunteerId)
       setStatus(updatedStatus)
     } catch (error) {
       console.error("Failed to update status:", error)
@@ -72,7 +111,7 @@ export default function LunchBoard() {
 
   // Check if current user has voted for an option
   const hasVoted = (optionId: string) => {
-    return votes.some((vote) => vote.optionId === optionId && vote.userId === currentUser.id)
+    return currentUser ? votes.some((vote) => vote.optionId === optionId && vote.userId === currentUser.id) : false
   }
 
   // Get the winning option (most votes)
@@ -90,11 +129,12 @@ export default function LunchBoard() {
   // Get volunteer user
   const getVolunteer = () => {
     if (!status.volunteerId) return null
+    console.log(users, status.volunteerId);
     return users.find((user) => user.id === status.volunteerId)
   }
 
   // Determine if voting phase is complete (at least 3 votes total)
-  const isVotingComplete = votes.length >= 1
+  const isVotingComplete = votes.length >= 2
 
   // Status badge component
   const StatusBadge = () => {
@@ -115,6 +155,11 @@ export default function LunchBoard() {
     )
   }
 
+  // If user hasn't entered name yet, show the name entry modal
+  if (!currentUser) {
+    return <NameEntryModal onNameSubmit={handleNameSubmit} />
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -131,6 +176,16 @@ export default function LunchBoard() {
         )}
       </div>
 
+      <Card className="bg-blue-50 border-blue-200">
+        <CardContent className="pt-6">
+          <p className="text-sm">
+            <span className="font-medium">Welcome, {currentUser.name}!</span> You're in planning session{" "}
+            <span className="font-mono text-xs bg-blue-100 px-2 py-1 rounded">{planningId}</span>
+          </p>
+          <p className="text-sm mt-2">Share this URL with your team to plan lunch together.</p>
+        </CardContent>
+      </Card>
+
       {showAddForm && (
         <AddOptionForm
           onOptionAdded={(newOption) => {
@@ -138,6 +193,7 @@ export default function LunchBoard() {
             setShowAddForm(false)
           }}
           currentUser={currentUser}
+          planningId={planningId}
         />
       )}
 
@@ -195,6 +251,7 @@ export default function LunchBoard() {
           currentUser={currentUser}
           status={status}
           onStatusUpdate={handleStatusUpdate}
+          planningId={planningId}
         />
       )}
 
@@ -204,6 +261,9 @@ export default function LunchBoard() {
             <Check className="h-8 w-8 text-green-500 mx-auto mb-2" />
             <h3 className="font-medium text-lg">Lunch has been delivered!</h3>
             <p className="text-muted-foreground">Enjoy your meal!</p>
+            <Button variant="outline" className="mt-4" onClick={() => router.push("/")}>
+              Start a New Planning Session
+            </Button>
           </CardContent>
         </Card>
       )}

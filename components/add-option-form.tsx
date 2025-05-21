@@ -14,9 +14,10 @@ import type { User } from "@/lib/types"
 interface AddOptionFormProps {
   onOptionAdded: (option: any) => void
   currentUser: User
+  planningId: string
 }
 
-export default function AddOptionForm({ onOptionAdded, currentUser }: AddOptionFormProps) {
+export default function AddOptionForm({ onOptionAdded, currentUser, planningId }: AddOptionFormProps) {
   const [name, setName] = useState("")
   const [description, setDescription] = useState("")
   const [loading, setLoading] = useState(false)
@@ -28,7 +29,7 @@ export default function AddOptionForm({ onOptionAdded, currentUser }: AddOptionF
 
     setLoading(true)
     try {
-      const newOption = await addLunchOption({
+      const newOption = await addLunchOption(planningId, {
         name,
         description,
         addedBy: currentUser.id,
